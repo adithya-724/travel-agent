@@ -60,9 +60,11 @@ if prompt := st.chat_input("Hello there! How may i help you today?"):
         You will be given a conversation history from which you will retrieve this information.
         "{msg_history}"
 
-        Your response should strictly be the question you want to ask the user.
-        Once you feel that you have all the information you want from the user, close by saying "Thanks for the information! We will get back to you!"
-        You should follow a conversation and do not print out the conversation history.
+        Your response should be conversational to retrieve the information. Only try retreiving one information at a time.
+        Follow a friendly conversation with the user based on the history provided to make it seem human like. Add greetings, interjections and other phrases wherever necessary.
+        Once you Shave all the information you want from the user, confirm the details with the user once and ask them if they want to proceed.
+        
+        Look inside the chat history if there are any signs of confirmation of details from the user. If it is present, close the conversation with a thank you note.
         '''
         human = ""
         prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
