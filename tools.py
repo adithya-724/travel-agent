@@ -37,7 +37,7 @@ def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,r
 
     search = GoogleSearch(params)
     results = search.get_dict()
-    top_5 = results['properties'][:100]
+    top_5 = results['properties'][:10]
     return top_5
 
 

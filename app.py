@@ -4,6 +4,8 @@ from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 from utils import get_deepseek_response
+from hotel_search import hotel_agent_response
+import pandas as pd
 
 # load env vars
 load_dotenv()
@@ -73,6 +75,11 @@ if prompt := st.chat_input("Hello there! How may i help you today?"):
     if int(ending_flag) == 1:
         with st.chat_message("assistant"):
             st.markdown('Thank you for provding all the information and confirming it. Have a pleasant day!')
+        
+        with st.spinner('fetching results'):    
+            response = hotel_agent_response(st.session_state.message_history)
+            hotels_df = pd.DataFrame(response)
+            st.dataframe(hotels_df)
     
     else:
         with st.chat_message("assistant"):
@@ -106,7 +113,8 @@ if prompt := st.chat_input("Hello there! How may i help you today?"):
             * "Country of visit"
             * "Number of days"
             * "Estimated budget for the trip"
-            * "Date"
+            * "Check-In Date"
+            * "Check-Out Date"
             3. Do not include any dialogue from the chat history in your response.
 
             Use the provided conversation history to check if any of the required information is already mentioned.
