@@ -80,28 +80,11 @@ if prompt := st.chat_input("Hello there! How may i help you today?"):
             response = hotel_agent_response(st.session_state.message_history)
             hotels_df = pd.DataFrame(response)
             st.dataframe(hotels_df)
+            with st.chat_message('assistant'):
+                st.markdown('I have found the best hotels for you!')
     
     else:
         with st.chat_message("assistant"):
-            # v1
-            # system = '''
-            # You are a helpful travel agent.
-            # You are supposed to maintain a conversation with the user to understand certain things
-            # You will maintain and ask questions until you receive the following information mentioned in double quotes:
-            # "country of visit"
-            # "number of days"
-            # "estimated budget for the trip"
-            # "date"
-
-            # You will be given a conversation history from which you will retrieve this information.
-            # "{msg_history}"
-
-            # Your response should be conversational to retrieve the information. Only try retreiving one information at a time.
-            # Follow a friendly conversation with the user based on the history provided to make it seem human like. Add greetings, interjections and other phrases wherever necessary.
-            # Once you Shave all the information you want from the user, confirm the details with the user once and ask them if they want to proceed.
-            
-            # Look inside the chat history if there are any signs of confirmation of details from the user. If it is present, close the conversation with a thank you note.
-            # '''
 
             # v2
             system = '''
@@ -113,8 +96,7 @@ if prompt := st.chat_input("Hello there! How may i help you today?"):
             * "Country of visit"
             * "Number of days"
             * "Estimated budget for the trip"
-            * "Check-In Date"
-            * "Check-Out Date"
+            * "Check-In Date and "Check-Out Date"
             3. Do not include any dialogue from the chat history in your response.
 
             Use the provided conversation history to check if any of the required information is already mentioned.
