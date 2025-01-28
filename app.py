@@ -5,7 +5,11 @@ from dotenv import load_dotenv
 import os
 from utils import get_deepseek_response
 from hotel_search import hotel_agent_response
+from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 import pandas as pd
+import time
+
 
 # load env vars
 load_dotenv()
@@ -26,6 +30,14 @@ with st.sidebar:
 # initialize chat ( replace with other models later)
 chat = ChatGroq(temperature=0, model_name="mixtral-8x7b-32768")
 
+llm = ChatOpenAI(
+    model="gpt-4o",
+    temperature=0.7,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2
+)
+
 
 # Initialize chat history
 if "messages" not in st.session_state:
@@ -34,96 +46,113 @@ if "messages" not in st.session_state:
 if "message_history" not in st.session_state:
     st.session_state.message_history = ''
 
+if "conv_end_flag" not in st.session_state:
+    st.session_state.conv_end_flag = 0
+
 # print(st.session_state.message_history)
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Agent function
 
-if prompt := st.chat_input("Hello there! How may i help you today?"):
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.session_state.message_history += 'Human Response:' +  prompt + '\n'
-    # Display user message in chat message container
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    system_msg_ending = '''
-        You are an assistant tasked with determining if the user has confirmed their travel details.
-
-        Review the user's response within the context of the latest question:
-
-        """
-        {msg_history}
-        """
-
-        Follow these steps:
-        1. Fetch the latest question from the conversation history.
-        2. Check if the latest question matches the format: "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
-        3. If the latest question matches this format, determine if the user's response below confirms the details:
-            """
-            {human_msg}
-            """
-        4. Return 1 if the user has confirmed the details. Return 0 if the user has not confirmed the details. Do not include any additional text in your response; only return the value 0 or 1.
-    '''
-
-
-    ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
-    print(ending_flag)
-
-    if int(ending_flag) == 1:
-        with st.chat_message("assistant"):
-            st.markdown('Thank you for provding all the information and confirming it. Have a pleasant day!')
-        
-        with st.spinner('fetching results'):    
-            response = hotel_agent_response(st.session_state.message_history)
-            hotels_df = pd.DataFrame(response)
+if st.session_state.conv_end_flag == 1:     
+    with st.spinner('Fetching the best deals for you'): 
+        st.divider()   
+        response = hotel_agent_response(st.session_state.message_history,True)
+        hotels_df = pd.DataFrame(response)
+        with st.chat_message('assistant'):
+            st.markdown('I have found the best hotels for you!')
             st.dataframe(hotels_df)
-            with st.chat_message('assistant'):
-                st.markdown('I have found the best hotels for you!')
-    
-    else:
-        with st.chat_message("assistant"):
+        
 
-            # v2
-            system = '''
-            As a helpful travel agent, your goal is to gather necessary travel details from the user through a friendly and engaging conversation.
 
-            Please adhere to the following guidelines:
-            1. Greet the user warmly and engage in a casual conversation.
-            2. Ask one question at a time to gather the following information:
-            * "Country of visit"
-            * "Number of days"
-            * "Estimated budget for the trip"
-            * "Check-In Date and "Check-Out Date"
-            3. Do not include any dialogue from the chat history in your response.
+# Chat
+else:
+    if prompt := st.chat_input("Hello there! How may i help you today?"):
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.message_history += 'Human Response:' +  prompt + '\n'
+        # Display user message in chat message container
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
-            Use the provided conversation history to check if any of the required information is already mentioned.
-            Conversation History:
+        system_msg_ending = '''
+            You are an assistant tasked with determining if the user has confirmed their travel details.
+
+            Review the user's response within the context of the latest question:
+
             """
             {msg_history}
             """
 
-            Be conversational and include greetings, interjections, and friendly phrases to make the interaction seem human-like. Maintain a natural flow of conversation.
+            Follow these steps:
+            1. Fetch the latest question from the conversation history.
+            2. Check if the latest question matches the format: "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
+            3. If the latest question matches this format, determine if the user's response below confirms the details:
+                """
+                {human_msg}
+                """
+            4. Return 1 if the user has confirmed the details. Return 0 if the user has not confirmed the details. Do not include any additional text in your response; only return the value 0 or 1.
+        '''
 
-            Once you have collected all the necessary information, confirm the details with the user:
-            "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
-            
-            If the human says yes or please proceed or acknowledges the detials,end the conversation by thanking the human warmly if they want to proceed and have confirmed the details and offering additional support if necessary.
-            '''
-            human = ""
-            prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+        # print(prompt)
+        prompt_ending = ChatPromptTemplate.from_messages([("system", system_msg_ending)])
+        chain_ending = prompt_ending | llm
+        response_ending = chain_ending.invoke({"msg_history":st.session_state.message_history,"human_msg" : prompt })
+        ending_flag = int(response_ending.content)
+        # ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
+        print(ending_flag)
+        
 
-            # for langchain compatible models use this
-            chain = prompt | chat
-            # response = chain.invoke({"msg_history": st.session_state.message_history})
-            # for deepseek
+        if ending_flag == 1 :
+            st.session_state.conv_end_flag = 1
+            with st.chat_message("assistant"):
+                st.markdown('Thank you for provding all the information and confirming it. Have a pleasant day!')
+                time.sleep(2)
+                st.rerun()
+        else:
+            with st.chat_message("assistant"):
+
+                # v2
+                system = '''
+                As a helpful travel agent, your goal is to gather necessary travel details from the user through a friendly and engaging conversation.
+
+                Please adhere to the following guidelines:
+                1. Greet the user warmly and engage in a casual conversation.
+                2. Ask one question at a time to gather the following information:
+                * "Country of visit"
+                * "Number of days"
+                * "Estimated budget for the trip"
+                * "Check-In Date and "Check-Out Date"
+                3. Do not include any dialogue from the chat history in your response.
+
+                Use the provided conversation history to check if any of the required information is already mentioned.
+                Conversation History:
+                """
+                {msg_history}
+                """
+
+                Be conversational and include greetings, interjections, and friendly phrases to make the interaction seem human-like. Maintain a natural flow of conversation.
+
+                Once you have collected all the necessary information, confirm the details with the user:
+                "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
+                
+                If the human says yes or please proceed or acknowledges the detials,end the conversation by thanking the human warmly if they want to proceed and have confirmed the details and offering additional support if necessary.
+                '''
+                human = ""
+                prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
+
+                # for langchain compatible models use this
+                chain = prompt | llm
+                response1 = chain.invoke({"msg_history": st.session_state.message_history})
+                response = response1.content
+                # for deepseek
 
 
-            response = get_deepseek_response(system.format(msg_history = st.session_state.message_history),'')
-            st.markdown(response)
-        st.session_state.message_history += 'Agent Response:' + response + '\n\n'
-        st.session_state.messages.append({"role": "assistant", "content": response})
+                # response = get_deepseek_response(system.format(msg_history = st.session_state.message_history),'')
+                st.markdown(response)
+            st.session_state.message_history += 'Agent Response:' + response + '\n\n'
+            st.session_state.messages.append({"role": "assistant", "content": response})
 
-    

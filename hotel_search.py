@@ -7,7 +7,7 @@ import json
 
 load_dotenv()
 
-def hotel_agent_response(chat_history):
+def hotel_agent_response(chat_history,verbose):
     hotel_search_agent = Agent(
 
     role='Hotel searching agent',
@@ -34,7 +34,7 @@ def hotel_agent_response(chat_history):
     crew = Crew(
         agents=[hotel_search_agent],
         tasks=[task],
-        verbose = False
+        verbose = verbose
     )
     result = crew.kickoff()
     result_raw = result.raw
