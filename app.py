@@ -22,16 +22,33 @@ st.title("Travel Agent")
 current_year = datetime.datetime.now().year
 
 
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "message_history" not in st.session_state:
+    st.session_state.message_history = ''
+
+if "conv_end_flag" not in st.session_state:
+    st.session_state.conv_end_flag = 0
+
 
 
 #sidebar
 with st.sidebar:
     hist_btn = st.button('clear chat history')
+    
     if hist_btn:
         st.session_state.messages = []
         st.session_state.message_history = ''
         st.session_state.conv_end_flag = 0
-
+    
+    if st.session_state.conv_end_flag == 1:
+        chat_btn = st.button('resume chat')
+        if chat_btn:
+            st.session_state.conv_end_flag = 0
+            time.sleep(2)
+            st.rerun()
 
 
 
@@ -46,16 +63,6 @@ llm = ChatOpenAI(
     max_retries=2
 )
 
-
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if "message_history" not in st.session_state:
-    st.session_state.message_history = ''
-
-if "conv_end_flag" not in st.session_state:
-    st.session_state.conv_end_flag = 0
 
 # print(st.session_state.message_history)
 # Display chat messages from history on app rerun
@@ -73,7 +80,9 @@ if st.session_state.conv_end_flag == 1:
         with st.chat_message('assistant'):
             st.markdown('I have found the best hotels for you!')
             st.dataframe(hotels_df)
-        
+
+   
+    
 
 
 # Chat
