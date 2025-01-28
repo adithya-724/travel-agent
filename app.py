@@ -9,12 +9,19 @@ from langchain_openai import OpenAI
 from langchain_openai import ChatOpenAI
 import pandas as pd
 import time
+import datetime
+
 
 
 # load env vars
 load_dotenv()
 
 st.title("Travel Agent")
+
+# Get current year
+current_year = datetime.datetime.now().year
+
+
 
 
 #sidebar
@@ -120,6 +127,7 @@ else:
                 As a helpful travel agent, your goal is to gather necessary travel details from the user through a friendly and engaging conversation.
 
                 Please adhere to the following guidelines:
+                0. The current year is {current_year}. If the user does not mention the year when mentioning the check-in and check-out dates, mention the year while confirming
                 1. Greet the user warmly and engage in a casual conversation.
                 2. Ask one question at a time to gather the following information:
                 * "Country of visit"
@@ -146,7 +154,7 @@ else:
 
                 # for langchain compatible models use this
                 chain = prompt | llm
-                response1 = chain.invoke({"msg_history": st.session_state.message_history})
+                response1 = chain.invoke({"msg_history": st.session_state.message_history,'current_year':current_year})
                 response = response1.content
                 # for deepseek
 
