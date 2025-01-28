@@ -30,6 +30,7 @@ with st.sidebar:
     if hist_btn:
         st.session_state.messages = []
         st.session_state.message_history = ''
+        st.session_state.conv_end_flag = 0
 
 
 
