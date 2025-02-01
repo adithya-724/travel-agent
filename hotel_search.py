@@ -58,3 +58,7 @@ def hotel_agent_response(chat_history,verbose):
     # final_result = json.loads(final_result_str)
 
     return result_raw
+
+
+
+hotel_agent_response('I want to book a room for thailand on 21st may 2025 and 30th may 2025',True)
