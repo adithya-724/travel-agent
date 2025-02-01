@@ -30,7 +30,7 @@ search = RedditSearchRun(
     )
 )
 
-def fetch_reddit_content(keywords,subreddits_ls):
+def fetch_reddit_content(keywords):
     """
     Fetches the comments for the given subreddits
 
@@ -52,29 +52,32 @@ def fetch_reddit_content(keywords,subreddits_ls):
     # https://praw.readthedocs.io/en/stable/tutorials/comments.html
     # # print(reddit.user.me())
 
-    comments_ls = []
+    comments =  {}
 
     def fetch_comments(url):
         submission = reddit.submission(url=url)
+        submission.comments.replace_more(limit=None)
+
+        # Fetching top level comments and their replies
         for top_level_comment in submission.comments:
-            if isinstance(top_level_comment, MoreComments):
-                continue
-            print(top_level_comment.body)
-            comments_ls.append(top_level_comment.body)
+            for second_level_comment in top_level_comment.replies:
+                # print(second_level_comment.body)
+                comments[top_level_comment.body] = second_level_comment.body
+            
     
     keywords_str = ' '.join(keywords)
     print(keywords_str)
-    for subreddit in subreddits_ls:
-        urls = fetch_posts_url(keywords_str,'hot','year',subreddit,'5')
-        print('Fetched urls')
-        print(urls)
-        for url in urls:
+    # for subreddit in subreddits_ls:
+    urls = fetch_posts_url(keywords_str,'hot','year','travel','1')
+    print('Fetched urls')
+    print(urls)
+    for url in urls:
+        if 'reddit' in url:
             fetch_comments(url)
     
-    return comments_ls
+    return comments
 
 
-comments  = fetch_reddit_content(['diving'],['thailandtourism'])
-final_info  = '\n'.join(comments)
-print(final_info)
-
+comments  = fetch_reddit_content(['thailand tourism snorkelling'])
+# final_info  = '\n'.join(comments)
+print(comments)

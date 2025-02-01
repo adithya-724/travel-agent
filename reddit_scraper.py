@@ -7,18 +7,24 @@ import json
 from crewai_tools import (
     WebsiteSearchTool
 )
+from pydantic import BaseModel
 
 load_dotenv()
 
+class  subredditInfo(BaseModel):
+    subreddits : list[str]
+
+
 def reddit_scraper(input):
-    web_rag_tool = WebsiteSearchTool()
+    web_rag_tool = WebsiteSearchTool(website='https://reddit.com')
 
     subreddit_scraper_agent = Agent(
 
     role='Subreddit scraping agent',
-    goal='Search and find the most relevant sub reddits',
+    goal='Search using reddit search and find the most relevant sub reddits',
     backstory='''
     You are the best subreddit scraper. You can fetch relevant subreddits related to the user's query.
+    You can use the reddit's search tool and fetch the most relevant posts from there
     ''',
     tools=[web_rag_tool]
     )
@@ -29,8 +35,10 @@ def reddit_scraper(input):
         ''',
         expected_output='''
         Python list of all relevant subreddits in the order of relevance.
-        Do not include any extra characters in the final output
+        Do not include any extra characters in the final output.
+        Include the url of the post.
         ''',
+        output_pydantic=subredditInfo,
         agent = subreddit_scraper_agent
     )
 
@@ -41,13 +49,13 @@ def reddit_scraper(input):
     )
     result = crew.kickoff()
     result_raw = result.raw
-    start_idx = result_raw.find('[')
-    end_idx = result_raw.find(']')
+    # start_idx = result_raw.find('[')
+    # end_idx = result_raw.find(']')
 
-    final_result_str = result_raw[start_idx:end_idx+1]
-    final_result = json.loads(final_result_str)
+    # final_result_str = result_raw[start_idx:end_idx+1]
+    # final_result = json.loads(final_result_str)
 
-    return final_result
+    return result_raw
 
 
-print(reddit_scraper('thailand tourism'))
+print(reddit_scraper('vietnam tourism snorkelling'))
