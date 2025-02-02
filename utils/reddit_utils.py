@@ -53,7 +53,7 @@ def fetch_posts_url(query,sort,time_filter,subreddit,limit):
 
 
 def fetch_posts(query):
-    url = os.getenv('reddit_url')
+    url = os.getenv('reddit_url_posts')
 
     querystring = {"query":query,"sort":"RELEVANCE","time":"year","nsfw":"0"}
 
@@ -102,20 +102,21 @@ def fetch_comments(url):
     return comments
 
 def get_comments(query):
-    url = "https://reddit-scraper2.p.rapidapi.com/search_comments"
+    url = os.getenv('reddit_url_comments')
 
     querystring = {"query":query,"sort":"RELEVANCE","nsfw":"0"}
 
     headers = {
-        "x-rapidapi-key": "d032a9d7f1mshb483cfb3094b15dp1942a4jsnae90643d6479",
-        "x-rapidapi-host": "reddit-scraper2.p.rapidapi.com"
+        "x-rapidapi-key": os.getenv('rapid_api_key'),
+        "x-rapidapi-host": os.getenv('rapid_api_host')
     }
     all_comments = ''
     
-    for i in range(10):
+    for i in range(2):
         response = requests.get(url, headers=headers, params=querystring)
+        # print(response.json())
         response_json = response.json()['data']
-
+        print(response_json)
         for item in response_json:
             all_comments += item['text'] + '\n'
         next_page_cursor = response.json()['pageInfo']
@@ -128,7 +129,5 @@ def get_comments(query):
         
 
     return all_comments
-    # print(response.json())
 
-
-pprint(get_comments('thailand tourism snorkelling'))
+print(get_comments('Phuket attractions in november'))

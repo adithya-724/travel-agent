@@ -11,6 +11,18 @@ from pprint import pprint
 
 load_dotenv()
 
+class HotelBooking(BaseModel):
+    name: str
+    price_inr : float
+    ratings: float
+    room: str
+    booking_link: str
+    hotel_type: str
+    check_in: date
+    check_out: date
+
+
+
 def create_detailed_itinerary(chat_history, verbose):
     # Define the Summarizing Agent
     summarizing_agent = Agent(
@@ -78,33 +90,46 @@ def create_detailed_itinerary(chat_history, verbose):
     result = crew.kickoff()
     return result.raw
 
-# Example chat history
-chat_history = '''
-Travel Agent: Hi! Welcome to Wanderlust Travels. How can I help you today?
 
-Customer: Hi! I’m planning a trip to Thailand and want to focus on water activities. Can you help?
 
-Travel Agent: Absolutely! Thailand is perfect for that. When are you planning to go?
 
-Customer: Late November or early December, for about 10 days.
+def hotel_agent_response(chat_history,verbose):
+    hotel_search_agent = Agent(
 
-Travel Agent: Great timing! The weather is ideal for water activities then. I’d suggest Phuket, Krabi, and the Phi Phi Islands. You can snorkel, dive, kayak, and explore stunning beaches.
+    role='Hotel searching agent',
+    goal='Search hotels according to user requirement',
+    backstory='''
+    You are the best agent to find the best hotels for customers. 
+    You always understand user's requirements from the conversation and find the best hotels.
+    People always reach out to you to find their hotels. 
+    You always find the best hotels''',
+    tools=[hotels_finder]
+    )
 
-Customer: That sounds perfect! What can I do in each place?
+    task = Task(
+        description=f'''
+        You will fetch the top 5 hotels based on the information in the chat history given : 
+        {chat_history}
+        ''',
+        expected_output='''JSON output which has the name of the hotel price of the hotel,ratings,room,link to the booking,type of hotel,check-in,check-out.
+        # Do not include any extra characters in the final output
+        # ''',
+        output_pydantic=HotelBooking,
+        agent = hotel_search_agent
+    )
 
-Travel Agent: In Phuket, you can dive at Racha Yai Island or kayak in Phang Nga Bay. In Krabi, try the Four Islands Tour for snorkeling and visit Railay Beach. In Phi Phi, don’t miss Maya Bay and snorkeling at Bamboo Island.
+    crew = Crew(
+        agents=[hotel_search_agent],
+        tasks=[task],
+        verbose = verbose
+    )
+    result = crew.kickoff()
+    result_raw = result.raw
+    # start_idx = result_raw.find('[')
+    # end_idx = result_raw.find(']')
 
-Customer: That all sounds amazing! Can you arrange accommodations too?
+    # final_result_str = result_raw[start_idx:end_idx+1]
+    # final_result = json.loads(final_result_str)
 
-Travel Agent: Of course! I’ll book beachfront resorts in Phuket and Krabi, and a cozy bungalow in Phi Phi. I’ll send you a detailed itinerary soon.
+    return result_raw
 
-Customer: Perfect! Thank you so much.
-
-Travel Agent: You’re welcome! Get ready for an unforgettable trip. I’ll be in touch soon with the details. 😊
-
-Customer: Thanks! Talk to you soon!
-'''
-
-# Execute the detailed itinerary creation
-detailed_itinerary = create_detailed_itinerary(chat_history, True)
-print(detailed_itinerary)

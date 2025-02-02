@@ -52,21 +52,21 @@ def get_reddit_comments(keywords : str):
     Returns:
         string: Reddit comments
     '''
-    url = "https://reddit-scraper2.p.rapidapi.com/search_comments"
+    url = os.getenv('reddit_url_comments')
 
     querystring = {"query":keywords,"sort":"RELEVANCE","nsfw":"0"}
-    print(querystring)
 
     headers = {
-        "x-rapidapi-key": "d032a9d7f1mshb483cfb3094b15dp1942a4jsnae90643d6479",
-        "x-rapidapi-host": "reddit-scraper2.p.rapidapi.com"
+        "x-rapidapi-key": os.getenv('rapid_api_key'),
+        "x-rapidapi-host": os.getenv('rapid_api_host')
     }
     all_comments = ''
-    
+
     for i in range(2):
         response = requests.get(url, headers=headers, params=querystring)
+        # print(response.json())
         response_json = response.json()['data']
-        print(response_json)
+
         for item in response_json:
             all_comments += item['text'] + '\n'
         next_page_cursor = response.json()['pageInfo']
