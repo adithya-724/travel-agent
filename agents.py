@@ -1,4 +1,4 @@
-from crewai import Agent,Task,Crew
+from crewai import Agent,Task,Crew,LLM
 from dotenv import load_dotenv
 import os
 from tools import hotels_finder, get_reddit_comments
@@ -27,23 +27,18 @@ def create_detailed_itinerary(chat_history, verbose):
     # Define the Summarizing Agent
     summarizing_agent = Agent(
         role='Travel Conversation Summarizer',
-        goal='Extract key travel details and user preferences from the conversation to inform itinerary planning.',
+        goal='Extract two primary keywords from the conversation to inform itinerary planning.',
         backstory='''
-        You are an expert in analyzing travel-related conversations. 
-        Your primary objective is to identify and extract essential details such as destinations, preferred activities, travel dates, and any specific user preferences. 
-        This information will serve as the foundation for crafting a personalized and detailed travel itinerary.
-        '''
+        You are adept at analyzing travel-related conversations to identify the most pertinent themes. 
+        Your primary objective is to distill the discussion into two main keywords that encapsulate the user's travel intentions and preferences.''',
     )
 
-    # Define the Reddit Insights Agent
-    reddit_agent = Agent(
-        role='Detailed Itinerary Planner',
-        goal='Utilize extracted travel details to gather in-depth information and craft a comprehensive daily itinerary, including optimal times for activities and scheduling considerations.',
-        backstory='''
-        You specialize in creating detailed travel itineraries by leveraging various information sources. 
-        Your role involves understanding user preferences, researching relevant details, and organizing activities into a coherent daily schedule. 
-        You ensure that each day is well-planned, considering factors like the best times for activities, travel logistics, and user interests.
-        ''',
+    # Define the Itinerary Planning Agent
+    itinerary_agent = Agent(
+        role='Itinerary Planner',
+        goal='Craft a detailed travel itinerary based on extracted keywords, chat history, and relevant Reddit insights.',
+        backstory='''You specialize in creating comprehensive travel itineraries tailored to user preferences. 
+        By leveraging extracted keywords, detailed chat history, and insights from Reddit, you design itineraries that include optimal activity times and daily schedules.''',
         tools=[get_reddit_comments],
         max_iter=2
     )
@@ -51,37 +46,39 @@ def create_detailed_itinerary(chat_history, verbose):
     # Task for the Summarizing Agent
     task1 = Task(
         description=f'''
-        Analyze the following conversation to extract key travel details:
+        Analyze the following conversation to extract two primary keywords that best represent the user's travel intentions:
         {chat_history}
         Focus on identifying:
-        1. Destination country and specific locations.
-        2. Preferred activities or interests.
-        3. Proposed travel dates or time frames.
-        4. Any additional user preferences or requirements.
-        Limit your extraction to a maximum of 3 keywords that best represent the user's travel intentions.
-        Provide a concise summary highlighting these details.
+        1. The main destination country or city.
+        2. The primary theme or type of activities the user is interested in.
+        Provide these keywords as a single string, separated by a space.
         ''',
-        expected_output='A Python string containing up to 3 extracted keywords representing travel details such as destinations, activities, dates, and preferences',
+        expected_output='A single string containing the two keywords separated by a space.',
         agent=summarizing_agent
     )
 
-    # Task for the Reddit Insights Agent
+    # Task for the Itinerary Planning Agent
     task2 = Task(
-        description='''
-        Using the extracted travel details, perform the following:
-        1. Research each destination to identify must-see attractions and activities.
-        2. Determine the optimal times for each activity (e.g., best time of day, seasonal considerations).
-        3. Organize activities into a daily schedule, ensuring a balanced and enjoyable itinerary.
-        4. Incorporate travel logistics between locations, considering realistic time allocations.
-        5. Provide recommendations for dining, relaxation, and other leisure activities.
-        Ensure that the itinerary is detailed, practical, and aligns with the user's preferences and interests.
+        description=f'''
+        Using the extracted keywords and the detailed chat history, perform the following:
+        1. Research the specified destination to identify key attractions and activities related to the user's interests.
+        2. Gather relevant Reddit comments to incorporate actual user experiences and additional insights.
+        3. Determine the best times for each activity, considering factors like weather, peak hours, and seasonal events.
+        4. Organize activities into a daily schedule, ensuring a balanced and enjoyable itinerary.
+        5. Provide recommendations for dining, relaxation, and other leisure activities that align with the user's preferences.
+        Ensure that the itinerary is detailed, practical, and tailored to the user's interests.
+        Always use only the extracted keywords from the previous task.
+        Chat history:
+        {chat_history}
         ''',
-        expected_output='A Python string containing a detailed daily itinerary with scheduled activities, times, and additional recommendations.',
-        agent=reddit_agent
+        expected_output='A Python string containing a detailed daily itinerary with scheduled activities, times, and additional recommendations. It should not be a dictionary.',
+        agent=itinerary_agent,
+        context=[task1]
     )
 
+    # Create the Crew with both agents and their tasks
     crew = Crew(
-        agents=[summarizing_agent, reddit_agent],
+        agents=[summarizing_agent, itinerary_agent],
         tasks=[task1, task2],
         verbose=verbose
     )
@@ -125,11 +122,12 @@ def hotel_agent_response(chat_history,verbose):
     )
     result = crew.kickoff()
     result_raw = result.raw
+    final_result = json.loads(result_raw)
     # start_idx = result_raw.find('[')
     # end_idx = result_raw.find(']')
 
     # final_result_str = result_raw[start_idx:end_idx+1]
     # final_result = json.loads(final_result_str)
 
-    return result_raw
+    return final_result
 

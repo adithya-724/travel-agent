@@ -3,8 +3,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
-from utils import get_deepseek_response
-from hotel_search import hotel_agent_response
+from utils.utils import get_deepseek_response
+from agents import hotel_agent_response,create_detailed_itinerary
 from langchain_openai import OpenAI
 from langchain_openai import ChatOpenAI
 import pandas as pd
@@ -80,6 +80,14 @@ if st.session_state.conv_end_flag == 1:
         with st.chat_message('assistant'):
             st.markdown('I have found the best hotels for you!')
             st.dataframe(hotels_df)
+
+        # Itinerary agent
+    with st.spinner('Crafting the best itinerary for you'): 
+        itinerary = create_detailed_itinerary(st.session_state.message_history,True)
+        with st.chat_message('assistant'):
+            st.markdown('I have the perfect itinerary crafted or you!')
+            st.markdown(itinerary)
+
 
    
     
