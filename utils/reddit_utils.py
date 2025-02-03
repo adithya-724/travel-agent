@@ -130,4 +130,5 @@ def get_comments(query):
 
     return all_comments
 
-print(get_comments('Phuket attractions in november'))
+# print(get_comments('Phuket attractions in november'))
+       

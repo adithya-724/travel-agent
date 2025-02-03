@@ -78,7 +78,7 @@ if st.session_state.conv_end_flag == 1:
         response = hotel_agent_response(st.session_state.message_history,True)
         hotels_df = pd.DataFrame(response)
         with st.chat_message('assistant'):
-            st.markdown('I have found the best hotels for you!')
+            st.markdown('I have found the bes t hotels for you!')
             st.dataframe(hotels_df)
 
         # Itinerary agent
