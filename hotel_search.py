@@ -4,6 +4,18 @@ import os
 from tools import hotels_finder
 import pandas as pd
 import json
+from pydantic import BaseModel, HttpUrl
+from datetime import date
+
+class HotelBooking(BaseModel):
+    name: str
+    price_inr : float
+    ratings: float
+    room: str
+    booking_link: str
+    hotel_type: str
+    check_in: date
+    check_out: date
 
 load_dotenv()
 
@@ -26,8 +38,9 @@ def hotel_agent_response(chat_history,verbose):
         {chat_history}
         ''',
         expected_output='''JSON output which has the name of the hotel price of the hotel,ratings,room,link to the booking,type of hotel,check-in,check-out.
-        Do not include any extra characters in the final output
-        ''',
+        # Do not include any extra characters in the final output
+        # ''',
+        output_pydantic=HotelBooking,
         agent = hotel_search_agent
     )
 
@@ -38,11 +51,14 @@ def hotel_agent_response(chat_history,verbose):
     )
     result = crew.kickoff()
     result_raw = result.raw
-    start_idx = result_raw.find('[')
-    end_idx = result_raw.find(']')
+    # start_idx = result_raw.find('[')
+    # end_idx = result_raw.find(']')
 
-    final_result_str = result_raw[start_idx:end_idx+1]
-    final_result = json.loads(final_result_str)
+    # final_result_str = result_raw[start_idx:end_idx+1]
+    # final_result = json.loads(final_result_str)
 
-    return final_result
+    return result_raw
 
+
+
+hotel_agent_response('I want to book a room for thailand on 21st may 2025 and 30th may 2025',True)

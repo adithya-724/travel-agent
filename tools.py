@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 import serpapi
 from pprint import pprint   
+import requests
 
 # from pydantic import BaseModel, Field
 load_dotenv()
@@ -40,38 +41,41 @@ def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,r
     top_5 = results['properties'][:10]
     return top_5
 
+@tool('RedditCommentFinder')
+def get_reddit_comments(keywords : str):
+    '''
+    Find relevant reddit comments based on user's query. This tool accepts a python string as a input.
 
-# def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,rooms = 1,):
-#     '''
-#     Find hotels using the Google Hotels engine.
+    Input:
+    query (str) : Query to be searched
 
-#     Returns:
-#         dict: Hotel search results.
-#     '''
+    Returns:
+        string: Reddit comments
+    '''
+    url = os.getenv('reddit_url_comments')
 
-#     params = {
-#         'api_key': os.environ.get('SERP_API_KEY'),
-#         'engine': 'google_hotels',
-#         'hl': 'en',
-#         'gl': 'us',
-#         'q': location,
-#         'check_in_date': check_in_date,
-#         'check_out_date': check_out_date,
-#         'currency': 'USD',
-#         'adults': adults,
-#         'children': children,
-#         'rooms': rooms
-#         # 'sort_by': sort_by,
-#         # 'hotel_class': params.hotel_class
-#     }
+    querystring = {"query":keywords,"sort":"RELEVANCE","nsfw":"0"}
 
-#     # search = serpapi.search(params)
-#     # results = search.data
-#     search = GoogleSearch(params)
-#     results = search.get_dict()
-#     # print(results)
-#     pprint(results['properties'][:5])
-#     # return results['properties'][:5]
+    headers = {
+        "x-rapidapi-key": os.getenv('rapid_api_key'),
+        "x-rapidapi-host": os.getenv('rapid_api_host')
+    }
+    all_comments = ''
 
+    for i in range(2):
+        response = requests.get(url, headers=headers, params=querystring)
+        # print(response.json())
+        response_json = response.json()['data']
 
-# hotels_finder('mumbai resorts','2025-05-21','2025-05-25')
+        for item in response_json:
+            all_comments += item['text'] + '\n'
+        next_page_cursor = response.json()['pageInfo']
+
+        if next_page_cursor['hasNextPage'] == True:
+            querystring['cursor'] = next_page_cursor['endCursor']
+            continue
+        else:
+            break
+        
+
+    return all_comments
