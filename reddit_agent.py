@@ -14,7 +14,7 @@ load_dotenv()
 from crewai import Agent, Task, Crew
 from dotenv import load_dotenv
 import os
-from tools import hotels_finder, get_reddit_comments
+from tools import hotels_finder, get_reddit_comments, fetch_reddit_content
 import pandas as pd
 import json
 from pydantic import BaseModel, HttpUrl
@@ -39,12 +39,16 @@ load_dotenv()
 def create_detailed_itinerary(chat_history, verbose):
     # Define the Summarizing Agent
     summarizing_agent = Agent(
-        role='Travel Conversation Summarizer',
-        goal='Extract two primary keywords from the conversation to inform itinerary planning.',
-        backstory='''
-        You are adept at analyzing travel-related conversations to identify the most pertinent themes. 
-        Your primary objective is to distill the discussion into two main keywords that encapsulate the user's travel intentions and preferences.''',
+    role='Geographical Information Extractor',
+    goal='Identify the main country and the most prominently mentioned city within that country from the conversation.',
+    backstory='''
+    You specialize in analyzing conversations to extract geographical information.
+    Your primary objective is to determine the main country discussed and identify the city within that country that is most frequently or prominently mentioned.
+    This information aids in understanding the user's travel intentions and preferences.
+    '''
     )
+
+
 
     # Define the Itinerary Planning Agent
     itinerary_agent = Agent(
@@ -52,35 +56,35 @@ def create_detailed_itinerary(chat_history, verbose):
         goal='Craft a detailed travel itinerary based on extracted keywords, chat history, and relevant Reddit insights.',
         backstory='''You specialize in creating comprehensive travel itineraries tailored to user preferences. 
         By leveraging extracted keywords, detailed chat history, and insights from Reddit, you design itineraries that include optimal activity times and daily schedules.''',
-        tools=[get_reddit_comments],
+        tools=[fetch_reddit_content],
         max_iter=2
     )
 
     # Task for the Summarizing Agent
     task1 = Task(
         description=f'''
-        Analyze the following conversation to extract two primary keywords that best represent the user's travel intentions:
+        Analyze the following conversation to identify:
+        1. The primary country mentioned.
+        2. The most prominent city within that country mentioned.
+        If multiple cities are mentioned, select the one most commonly referenced or contextually significant.
+        Provide these as a single string, separated by a comma.
+        Conversation:
         {chat_history}
-        Focus on identifying:
-        1. The main destination country or city.
-        2. The primary theme or type of activities the user is interested in.
-        Provide these keywords as a single string, separated by a space.
         ''',
-        expected_output='A single string containing the two keywords separated by a space.',
+        expected_output='A single string containing the country and city separated by a comma.',
         agent=summarizing_agent
     )
 
     # Task for the Itinerary Planning Agent
     task2 = Task(
         description=f'''
-        Using the extracted keywords and the detailed chat history, perform the following:
+        Using the extracted information and the detailed chat history, perform the following:
         1. Research the specified destination to identify key attractions and activities related to the user's interests.
         2. Gather relevant Reddit comments to incorporate actual user experiences and additional insights.
         3. Determine the best times for each activity, considering factors like weather, peak hours, and seasonal events.
         4. Organize activities into a daily schedule, ensuring a balanced and enjoyable itinerary.
         5. Provide recommendations for dining, relaxation, and other leisure activities that align with the user's preferences.
         Ensure that the itinerary is detailed, practical, and tailored to the user's interests.
-        Always use only the extracted keywords from the previous task.
         Chat history:
         {chat_history}
         ''',

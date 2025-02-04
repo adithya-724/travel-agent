@@ -32,20 +32,21 @@ search = RedditSearchRun(
     )
 )
 
-def fetch_reddit_content(keywords,subreddits_ls):
+def fetch_reddit_content(location):
     """
-    Fetches the comments for the given subreddits
+    Fetches the comments for the given keyword
 
     Args:
-        subreddits_ls (List): List containing the subreddits
+        location (str): Location for which the reddit information has to be scraped
     """
-
+    SUBREDDIT_LS = ['travelhacks','travel']
     all_comments = ''
-    keywords_str = ' '.join(keywords)
+    keywords_str = ' '.join(location)
     print(keywords_str)
+    
 
-    for subreddit in subreddits_ls:
-        urls = fetch_posts_url(keywords_str,'relevance','year',subreddit,'1')
+    for subreddit in SUBREDDIT_LS:
+        urls = fetch_posts_url(keywords_str,'relevance','year',subreddit,'5')
         print('Fetched urls')
         print(urls)
         for url in urls:
@@ -61,7 +62,4 @@ def fetch_reddit_content(keywords,subreddits_ls):
     
     return all_comments
 
-
-comments  = fetch_reddit_content(['phuket'],['travelhacks'])
-print(comments)
 
