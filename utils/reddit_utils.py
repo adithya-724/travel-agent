@@ -130,5 +130,26 @@ def get_comments(query):
 
     return all_comments
 
+
+def extract_comments(comment, level=0):
+        if level == 0:
+            header = "Comment:"
+        else:
+            header = "Reply:"
+        
+        indent = '    ' * level  # Indentation for nested comments
+        if level == 0:
+            formatted_comment = f"{indent}{header}\n{indent}{comment.body}\n\n"
+        else:
+            formatted_comment = f"{indent}{header}{level}\n{indent}{comment.body}\n\n"
+        
+        # Ensure all replies are loaded
+        comment.replies.replace_more(limit=None)
+        
+        for reply in comment.replies:
+            formatted_comment += extract_comments(reply, level + 1)
+        
+        return formatted_comment
+
 # print(get_comments('Phuket attractions in november'))
        
