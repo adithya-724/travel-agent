@@ -38,7 +38,7 @@ if "conv_end_flag" not in st.session_state:
 with st.sidebar:
     hist_btn = st.button('clear chat history')
     
-    model = st.radio('deepseek','gpt')
+    model = st.radio('Choose chat model:',['gpt','deepseek'])
 
     if hist_btn:
         st.session_state.messages = []

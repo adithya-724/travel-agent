@@ -18,5 +18,3 @@ def get_deepseek_response(system_msg,human_msg):
     )
     return response.choices[0].message.content
 
-
-print(get_deepseek_response('you will asnwer in 5 words only','can you tell me a story?'))
