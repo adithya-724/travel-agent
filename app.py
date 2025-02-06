@@ -38,6 +38,8 @@ if "conv_end_flag" not in st.session_state:
 with st.sidebar:
     hist_btn = st.button('clear chat history')
     
+    model = st.radio('deepseek','gpt')
+
     if hist_btn:
         st.session_state.messages = []
         st.session_state.message_history = ''
@@ -124,9 +126,11 @@ else:
         # print(prompt)
         prompt_ending = ChatPromptTemplate.from_messages([("system", system_msg_ending)])
         chain_ending = prompt_ending | llm
-        response_ending = chain_ending.invoke({"msg_history":st.session_state.message_history,"human_msg" : prompt })
-        ending_flag = int(response_ending.content)
-        # ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
+        if model == 'gpt':
+            response_ending = chain_ending.invoke({"msg_history":st.session_state.message_history,"human_msg" : prompt })
+            ending_flag = int(response_ending.content)
+        elif model =='deepseek':
+            ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
         print(ending_flag)
         
 
@@ -170,13 +174,14 @@ else:
                 prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
                 # for langchain compatible models use this
-                chain = prompt | llm
-                response1 = chain.invoke({"msg_history": st.session_state.message_history,'current_year':current_year})
-                response = response1.content
+                chain = prompt | llm\
+                
+                if model == 'gpt':
+                    response1 = chain.invoke({"msg_history": st.session_state.message_history,'current_year':current_year})
+                    response = response1.content
                 # for deepseek
-
-
-                # response = get_deepseek_response(system.format(msg_history = st.session_state.message_history),'')
+                elif model == 'deepseek': 
+                    response = get_deepseek_response(system.format(msg_history = st.session_state.message_history),'')
                 st.markdown(response)
             st.session_state.message_history += 'Agent Response:' + response + '\n\n'
             st.session_state.messages.append({"role": "assistant", "content": response})
