@@ -98,7 +98,7 @@ def fetch_reddit_content(location):
     
 
     for subreddit in SUBREDDIT_LS:
-        urls = fetch_posts_url(location,'relevance','year',subreddit,'2')
+        urls = fetch_posts_url(location,'relevance','year',subreddit,'5')
         print('Fetched urls')
         print(urls)
         for url in urls:
@@ -106,11 +106,14 @@ def fetch_reddit_content(location):
                 comments = ''
                 submission = reddit.submission(url=url)
                 print(submission.num_comments)
-                submission.comments.replace_more(limit=None)
-                
-                for top_level_comment in submission.comments:
-                    all_comments += extract_comments(top_level_comment)
-                    all_comments += '-----------------------------\n'
+                if submission.num_comments < 200:
+                    submission.comments.replace_more(limit=None)
+                    
+                    for top_level_comment in submission.comments:
+                        all_comments += extract_comments(top_level_comment)
+                        all_comments += '-----------------------------\n'
+                else:
+                    continue
     
     return all_comments
 

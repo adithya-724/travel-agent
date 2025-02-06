@@ -42,7 +42,7 @@ def create_detailed_itinerary(chat_history, verbose):
         backstory='''You specialize in creating comprehensive travel itineraries tailored to user preferences. 
         By leveraging extracted keywords, detailed chat history, and insights from Reddit, you design itineraries that include optimal activity times and daily schedules.''',
         tools=[fetch_reddit_content],
-        max_iter=2
+        max_iter=5
     )
 
     # Task for the Summarizing Agent
@@ -52,6 +52,7 @@ def create_detailed_itinerary(chat_history, verbose):
         {chat_history}
         Focus on listing each unique location found in the conversation.
         Provide these locations as a single string, separated by commas.
+        Extract a maximum of three locations where the first location should always be the country
         ''',
         expected_output='A single string containing the extracted locations, separated by commas.',
         agent=summarizing_agent
