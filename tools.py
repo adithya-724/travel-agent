@@ -6,6 +6,7 @@ import os
 import serpapi
 from pprint import pprint   
 import requests
+from utils.reddit_utils import *
 
 # from pydantic import BaseModel, Field
 load_dotenv()
@@ -79,3 +80,40 @@ def get_reddit_comments(keywords : str):
         
 
     return all_comments
+
+
+
+@tool('reddit_comment_scraper')
+def fetch_reddit_content(location):
+    """
+    Fetches the comments for the given keyword
+
+    Args:
+        location (str): Location for which the reddit information has to be scraped
+    """
+    SUBREDDIT_LS = ['travelhacks']
+    all_comments = ''
+    # keywords_str = ' '.join(location)
+    print(location)
+    
+
+    for subreddit in SUBREDDIT_LS:
+        urls = fetch_posts_url(location,'relevance','year',subreddit,'5')
+        print('Fetched urls')
+        print(urls)
+        for url in urls:
+            if 'reddit' in url:
+                comments = ''
+                submission = reddit.submission(url=url)
+                print(submission.num_comments)
+                if submission.num_comments < 200:
+                    submission.comments.replace_more(limit=None)
+                    
+                    for top_level_comment in submission.comments:
+                        all_comments += extract_comments(top_level_comment)
+                        all_comments += '-----------------------------\n'
+                else:
+                    continue
+    
+    return all_comments
+
