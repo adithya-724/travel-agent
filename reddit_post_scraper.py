@@ -44,11 +44,18 @@ def fetch_reddit_content(location):
     # keywords_str = ' '.join(location)
     print(location)
     location_ls = location.split(' ')
-    num_posts = 200
+    num_posts = 50
     fetched_posts = 0
     comment_exceed = 0
     invalid_urls_posts = 0
     irrelevant_posts = 0
+
+    def custom_filter(record):
+        return record["level"].name in ["DEBUG", "ERROR", "SUCCESS"]
+
+    logger.remove()  # Remove the default handler
+    logger.add("app.log", filter=custom_filter, format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}")
+
 
     for subreddit in SUBREDDIT_LS:
         
@@ -101,6 +108,7 @@ def fetch_reddit_content(location):
     logger.debug('Total posts with no matching keywords : {}',irrelevant_posts)
     
     logger.success('Fetched {} valid posts',valid_posts)
+    logger.success('Info : {}',all_comments)
 
     return all_comments
 

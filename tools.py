@@ -91,29 +91,79 @@ def fetch_reddit_content(location):
     Args:
         location (str): Location for which the reddit information has to be scraped
     """
-    SUBREDDIT_LS = ['travelhacks']
+    SUBREDDIT_LS = ['travelhacks','travel']
     all_comments = ''
     # keywords_str = ' '.join(location)
     print(location)
-    
+    location_ls = location.split(' ')
+    num_posts = 50
+    fetched_posts = 0
+    comment_exceed = 0
+    invalid_urls_posts = 0
+    irrelevant_posts = 0
+    logger.add(
+        "app.log",  # Path to your log file
+        format="{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}",  # Log message format
+        level="INFO",  # Minimum log level to record
+        rotation="10 MB",  # Rotate log after reaching 10 MB
+        retention="1 week",  # Retain logs for 1 week
+        compression="zip"  # Compress logs to zip format
+    )
+
 
     for subreddit in SUBREDDIT_LS:
-        urls = fetch_posts_url(location,'relevance','year',subreddit,'5')
-        print('Fetched urls')
-        print(urls)
+        
+        urls = fetch_posts_url(location,'relevance','year',subreddit,str(num_posts))
+        fetched_posts += len(urls)
+        # print('Fetched urls')
+        logger.debug('Fetched urls')
+        pprint(urls)
+        valid_posts = 0
+
         for url in urls:
             if 'reddit' in url:
-                comments = ''
                 submission = reddit.submission(url=url)
-                print(submission.num_comments)
-                if submission.num_comments < 200:
-                    submission.comments.replace_more(limit=None)
-                    
-                    for top_level_comment in submission.comments:
-                        all_comments += extract_comments(top_level_comment)
-                        all_comments += '-----------------------------\n'
+                post_title = submission.title
+                post_title_lower = post_title.lower()
+                text_body = submission.selftext
+                text_body_lower = text_body.lower()
+
+                combined_txt = f'Title:{post_title_lower}\n Body:{text_body_lower}'
+                # logger.debug(combined_txt)
+                # print(post_title)
+                # print(submission.num_comments)
+
+                # Only fetching posts which have the keyword in the title
+                if any(keyword.lower() in combined_txt for keyword in location_ls):
+                    # Limiting posts with comments under 200                    
+                    if submission.num_comments < 200:
+                        valid_posts += 1 
+                        submission.comments.replace_more(limit=None)                    
+                        for top_level_comment in submission.comments:
+                            all_comments += extract_comments(top_level_comment)
+                            all_comments += '-----------------------------\n'
+                    else:
+                        comment_exceed += 1
+                        # logger.error('Post had more than 200 comments')
+                        continue
                 else:
+                    irrelevant_posts += 1 
+                    # logger.error('No matching keyword',post_title)
                     continue
+            else:
+                invalid_urls_posts += 1
+                # logger.error('Not a valid reddit url')
+
+
+    logger.debug('Total posts fetched : {}',fetched_posts)
+
+    logger.debug('Total posts with invalid urls : {}',invalid_urls_posts)
+    logger.debug('Total posts with comments > 200 : {}',comment_exceed)
+    logger.debug('Total posts with no matching keywords : {}',irrelevant_posts)
     
+    logger.success('Fetched {} valid posts',valid_posts)
+
+
+
     return all_comments
 
