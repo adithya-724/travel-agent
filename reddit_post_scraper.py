@@ -86,6 +86,15 @@ def fetch_reddit_content(location):
                         valid_posts += 1 
                         submission.comments.replace_more(limit=None)                    
                         for top_level_comment in submission.comments:
+                            top_level_comment.refresh()
+                            top_level_comment.replies.replace_more(limit=None)
+                            total_replies = len(top_level_comment.replies.list())
+                            upvotes = top_level_comment.score
+
+                            # removing comments with no upvotes and replies
+                            if upvotes <= 1 and total_replies < 1:
+                                continue
+
                             all_comments += extract_comments(top_level_comment)
                             all_comments += '-----------------------------\n'
                     else:
