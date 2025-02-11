@@ -8,6 +8,7 @@ from langchain_community.tools.reddit_search.tool import RedditSearchRun
 from langchain_community.utilities.reddit_search import RedditSearchAPIWrapper
 from langchain_community.tools.reddit_search.tool import RedditSearchSchema
 import re
+from loguru import logger
 
 # load env vars
 load_dotenv()
@@ -44,9 +45,8 @@ def fetch_posts_url(query,sort,time_filter,subreddit,limit):
         query=query, sort=sort, time_filter=time_filter, subreddit=subreddit, limit=limit
     )
 
-
     result = search.run(tool_input=search_params.model_dump())
-    print(result)
+    # print(result)
     url_pattern = r'https?://[^\s]+'
     urls = re.findall(url_pattern, result)
     return urls 
