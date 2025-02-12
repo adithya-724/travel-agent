@@ -11,6 +11,7 @@ from pprint import pprint
 
 load_dotenv()
 
+
 class HotelBooking(BaseModel):
     name: str
     price_inr : float
@@ -91,6 +92,13 @@ def create_detailed_itinerary(chat_history, verbose):
 
 
 
+
+#load helper information
+with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-property-types.json', 'r') as file:
+    hotel_types = file.read()
+with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-amenities.json', 'r') as file:
+    amenties = file.read()
+
 def hotel_agent_response(chat_history,verbose):
     hotel_search_agent = Agent(
 
@@ -107,7 +115,13 @@ def hotel_agent_response(chat_history,verbose):
     task = Task(
         description=f'''
         You will fetch the top 5 hotels based on the information in the chat history given : 
-        {chat_history}
+        "{chat_history}"
+        Also use the below provided information if necessary:
+        "property_types"
+        {hotel_types}
+
+        "amenties"
+        {amenties}
         ''',
         expected_output='''JSON output which has the name of the hotel price of the hotel,ratings,room,link to the booking,type of hotel,check-in,check-out.
         # Do not include any extra characters in the final output
@@ -124,11 +138,6 @@ def hotel_agent_response(chat_history,verbose):
     result = crew.kickoff()
     result_raw = result.raw
     final_result = json.loads(result_raw)
-    # start_idx = result_raw.find('[')
-    # end_idx = result_raw.find(']')
-
-    # final_result_str = result_raw[start_idx:end_idx+1]
-    # final_result = json.loads(final_result_str)
 
     return final_result
 

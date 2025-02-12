@@ -12,12 +12,41 @@ from utils.reddit_utils import *
 load_dotenv()
 
 @tool('HotelFinder')
-def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,rooms = 1,):
+def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,rooms = 1,property_types = 21,amenties = None,max_price= None):
     '''
-    Find hotels using the Google Hotels engine.
+    Searches for hotels in a specified location and date range using SerpApi's Google Hotels engine.
+
+    Args:
+        location (str): The destination city or region to search for hotels.
+        check_in_date (str): The desired check-in date in 'YYYY-MM-DD' format.
+        check_out_date (str): The desired check-out date in 'YYYY-MM-DD' format.
+        adults (int, optional): The number of adult guests. Defaults to 2.
+        children (int, optional): The number of child guests. Defaults to 0.
+        rooms (int, optional): The number of hotel rooms required. Defaults to 1.
+        max_price (int,optional) : The maximum price to limit the hotel search for.
+        property_types (str, optional): A comma-separated string of property type codes to filter the search results.
+            Defaults to '21'.
+            Examples:
+                - Single property type:
+                    '14'
+                - Multiple property types:
+                    '14,12,13'
+
+            Note: Replace '14', '12', '13' with the appropriate property type codes.
+
+        amenities (str, optional): A comma-separated string of amenity codes to filter the search results.
+            Defaults to None.
+
+            Examples:
+                - Single amenity:
+                    '35'
+                - Multiple amenities:
+                    '35,9,19'
+
+            Note: Replace '35', '9', '19' with the appropriate amenity codes as per SerpApi's documentation.
 
     Returns:
-        dict: Hotel search results.
+        list: A list of dictionaries containing details of the top 10 hotel properties found.
     '''
 
     params = {
@@ -31,8 +60,11 @@ def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,r
         'currency': 'INR',
         'adults': adults,
         'children': children,
-        'rooms': rooms
-        # 'sort_by': sort_by,
+        'rooms': rooms,
+        'property_types' : property_types,
+        'amenties': amenties,
+        'sort_by': 8,
+        'max_price' : max_price
         # 'hotel_class': params.hotel_class
     }
 

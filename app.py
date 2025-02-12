@@ -38,6 +38,8 @@ if "conv_end_flag" not in st.session_state:
 with st.sidebar:
     hist_btn = st.button('clear chat history')
     
+    model = st.radio('Choose chat model:',['gpt','deepseek'])
+
     if hist_btn:
         st.session_state.messages = []
         st.session_state.message_history = ''
@@ -57,6 +59,14 @@ chat = ChatGroq(temperature=0, model_name="mixtral-8x7b-32768")
 
 llm = ChatOpenAI(
     model="gpt-4o",
+    temperature=0.7,
+    max_tokens=None,
+    timeout=None,
+    max_retries=2
+)
+
+llm1 = ChatOpenAI(
+    model="gpt-4",
     temperature=0.7,
     max_tokens=None,
     timeout=None,
@@ -124,9 +134,11 @@ else:
         # print(prompt)
         prompt_ending = ChatPromptTemplate.from_messages([("system", system_msg_ending)])
         chain_ending = prompt_ending | llm
-        response_ending = chain_ending.invoke({"msg_history":st.session_state.message_history,"human_msg" : prompt })
-        ending_flag = int(response_ending.content)
-        # ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
+        if model == 'gpt':
+            response_ending = chain_ending.invoke({"msg_history":st.session_state.message_history,"human_msg" : prompt })
+            ending_flag = int(response_ending.content)
+        elif model =='deepseek':
+            ending_flag = get_deepseek_response(system_msg_ending.format(msg_history = st.session_state.message_history,human_msg = prompt),'')
         print(ending_flag)
         
 
@@ -139,44 +151,72 @@ else:
         else:
             with st.chat_message("assistant"):
 
-                # v2
-                system = '''
-                As a helpful travel agent, your goal is to gather necessary travel details from the user through a friendly and engaging conversation.
+                # # v2
+                # system = '''
+                # As a helpful travel agent, your goal is to gather necessary travel details from the user through a friendly and engaging conversation.
 
-                Please adhere to the following guidelines:
-                0. The current year is {current_year}. If the user does not mention the year when mentioning the check-in and check-out dates, mention the year while confirming
-                1. Greet the user warmly and engage in a casual conversation.
-                2. Ask one question at a time to gather the following information:
-                * "Country of visit"
-                * "Number of days"
-                * "Estimated budget for the trip"
-                * "Check-In Date and "Check-Out Date"
-                3. Do not include any dialogue from the chat history in your response.
+                # Please adhere to the following guidelines:
+                # 0. The current year is {current_year}. If the user does not mention the year when mentioning the check-in and check-out dates, mention the year while confirming
+                # 1. Greet the user warmly and engage in a casual conversation.
+                # 2. Ask one question at a time to gather the following information:
+                # * "Country of visit"
+                # * "Number of days"
+                # * "Estimated budget for the trip"
+                # * "Check-In Date and "Check-Out Date"
+                # 3. Do not include any dialogue from the chat history in your response.
 
-                Use the provided conversation history to check if any of the required information is already mentioned.
-                Conversation History:
-                """
-                {msg_history}
-                """
+                # Use the provided conversation history to check if any of the required information is already mentioned.
+                # Conversation History:
+                # """
+                # {msg_history}
+                # """
 
-                Be conversational and include greetings, interjections, and friendly phrases to make the interaction seem human-like. Maintain a natural flow of conversation.
+                # Be conversational and include greetings, interjections, and friendly phrases to make the interaction seem human-like. Maintain a natural flow of conversation.
 
-                Once you have collected all the necessary information, confirm the details with the user:
-                "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
+                # Once you have collected all the necessary information, confirm the details with the user:
+                # "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Date]. Is that correct?"
                 
-                If the human says yes or please proceed or acknowledges the detials,end the conversation by thanking the human warmly if they want to proceed and have confirmed the details and offering additional support if necessary.
+                # If the human says yes or please proceed or acknowledges the detials,end the conversation by thanking the human warmly if they want to proceed and have confirmed the details and offering additional support if necessary.
+                # '''
+
+                system = '''
+                As a dedicated travel agent, your objective is to gather comprehensive travel details from the user through a friendly and engaging conversation. Follow these guidelines:
+                    0. The current year is {current_year}. If the user does not mention the year when specifying the check-in and check-out dates, mention the year while confirming.
+                    1. Greet the user warmly and engage in a casual conversation.
+                    2. Ask one question at a time to gather detailed information. Ensure the conversation flows naturally:
+                    - Start with greeting and then ask about the **country of visit**.
+                    - Based on the user's response, continue the conversation to gather details about popular cities or regions, the primary purpose of the trip, and specific activities or experiences of interest.
+                    - Gradually ask about **travel dates and duration** (check-in and check-out dates, number of days).
+                    - Move on to inquire about the **budget** for the trip.
+                    - Collect **traveler information** such as the number of people traveling and any special requirements or accommodations.
+                    - Ask about **accommodation preferences**, including type of accommodation and essential amenities or services.
+                    - Check for **dining and dietary needs**, including preferences and any restrictions.
+                    - Explore **previous travel experiences** to understand likes and dislikes and the best travel experience.
+
+                    3. Do not include any dialogue from the chat history in your response. Use the provided conversation history to check if any of the necessary information is already mentioned:
+
+                    **Conversation History:**
+                    ```{msg_history}```
+
+                    4. Confirm the gathered details with the user:
+                    - "Just to confirm, you are planning a trip to [Country] for [Number of days] days, with an estimated budget of [Budget], starting from [Check-in Date] to [Check-out Date] in {current_year}. Is that correct?"
+
+                    5. End the conversation by thanking the user warmly and offering additional support if necessary:
+                    - "Thank you for providing all the details. If you have any further questions or need assistance with anything else, feel free to ask. Have a wonderful day!"`
                 '''
+
                 human = ""
                 prompt = ChatPromptTemplate.from_messages([("system", system), ("human", human)])
 
                 # for langchain compatible models use this
-                chain = prompt | llm
-                response1 = chain.invoke({"msg_history": st.session_state.message_history,'current_year':current_year})
-                response = response1.content
+                chain = prompt | llm1 
+                
+                if model == 'gpt':
+                    response1 = chain.invoke({"msg_history": st.session_state.message_history,'current_year':current_year})
+                    response = response1.content
                 # for deepseek
-
-
-                # response = get_deepseek_response(system.format(msg_history = st.session_state.message_history),'')
+                elif model == 'deepseek': 
+                    response = get_deepseek_response(system.format(msg_history = st.session_state.message_history,current_year = current_year),'')
                 st.markdown(response)
             st.session_state.message_history += 'Agent Response:' + response + '\n\n'
             st.session_state.messages.append({"role": "assistant", "content": response})
