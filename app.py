@@ -4,7 +4,7 @@ from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 from utils.utils import get_deepseek_response
-from agents import hotel_agent_response,create_detailed_itinerary
+from agent_utils.agents import hotel_agent,itinerary_agent
 from langchain_openai import OpenAI
 from langchain_openai import ChatOpenAI
 import pandas as pd
@@ -85,7 +85,7 @@ for message in st.session_state.messages:
 if st.session_state.conv_end_flag == 1:     
     with st.spinner('Fetching the best deals for you'): 
         st.divider()   
-        response = hotel_agent_response(st.session_state.message_history,True)
+        response = hotel_agent(st.session_state.message_history,True)
         hotels_df = pd.DataFrame(response)
         with st.chat_message('assistant'):
             st.markdown('I have found the best hotels for you!')
@@ -93,7 +93,7 @@ if st.session_state.conv_end_flag == 1:
 
         # Itinerary agent
     with st.spinner('Crafting the best itinerary for you'): 
-        itinerary = create_detailed_itinerary(st.session_state.message_history,True)
+        itinerary = itinerary_agent(st.session_state.message_history,True)
         with st.chat_message('assistant'):
             st.markdown('I have the perfect itinerary crafted or you!')
             st.markdown(itinerary)

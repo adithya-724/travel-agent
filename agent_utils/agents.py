@@ -1,12 +1,13 @@
 from crewai import Agent,Task,Crew,LLM
 from dotenv import load_dotenv
 import os
-from tools import hotels_finder, get_reddit_comments ,fetch_reddit_content
+from agent_utils.tools import hotels_finder, get_reddit_comments ,fetch_reddit_content
 import pandas as pd
 import json
 from pydantic import BaseModel, HttpUrl
 from datetime import date
 from pprint import pprint
+from pathlib import Path
 
 
 load_dotenv()
@@ -24,7 +25,7 @@ class HotelBooking(BaseModel):
 
 
 
-def create_detailed_itinerary(chat_history, verbose):
+def itinerary_agent(chat_history, verbose):
     # Define the Summarizing Agent
     summarizing_agent = Agent(
         role='Location Extractor',
@@ -94,12 +95,20 @@ def create_detailed_itinerary(chat_history, verbose):
 
 
 #load helper information
-with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-property-types.json', 'r') as file:
-    hotel_types = file.read()
-with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-amenities.json', 'r') as file:
-    amenties = file.read()
 
-def hotel_agent_response(chat_history,verbose):
+script_dir = os.path.dirname(os.path.abspath(__file__))
+data_dir = os.path.join(script_dir, '..', 'data')
+
+hotel_types_path = os.path.join(data_dir, 'google-hotels-property-types.json')
+amenities_path = os.path.join(data_dir, 'google-hotels-amenities.json')
+
+with open(hotel_types_path, 'r') as file:
+    hotel_types = json.load(file)
+
+with open(amenities_path, 'r') as file:
+    amenities = json.load(file)
+
+def hotel_agent(chat_history,verbose):
     hotel_search_agent = Agent(
 
     role='Hotel searching agent',
@@ -116,12 +125,16 @@ def hotel_agent_response(chat_history,verbose):
         description=f'''
         You will fetch the top 5 hotels based on the information in the chat history given : 
         "{chat_history}"
+
+        Also based on the chat history, decide what percentage (%) of the budget should go for allocation considering flights and other activities.
+        Ideally it should not cross 30% unless the user has asked for something additional
+
         Also use the below provided information if necessary:
         "property_types"
         {hotel_types}
 
         "amenties"
-        {amenties}
+        {amenities}
         ''',
         expected_output='''JSON output which has the name of the hotel price of the hotel,ratings,room,link to the booking,type of hotel,check-in,check-out.
         # Do not include any extra characters in the final output
@@ -140,4 +153,5 @@ def hotel_agent_response(chat_history,verbose):
     final_result = json.loads(result_raw)
 
     return final_result
+
 

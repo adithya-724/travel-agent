@@ -151,5 +151,4 @@ def extract_comments(comment, level=0):
         
         return formatted_comment
 
-# print(get_comments('Phuket attractions in november'))
        
