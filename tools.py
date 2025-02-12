@@ -12,7 +12,7 @@ from utils.reddit_utils import *
 load_dotenv()
 
 @tool('HotelFinder')
-def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,rooms = 1,property_types = 21,amenties = None):
+def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,rooms = 1,property_types = 21,amenties = None,max_price= None):
     '''
     Searches for hotels in a specified location and date range using SerpApi's Google Hotels engine.
 
@@ -23,6 +23,7 @@ def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,r
         adults (int, optional): The number of adult guests. Defaults to 2.
         children (int, optional): The number of child guests. Defaults to 0.
         rooms (int, optional): The number of hotel rooms required. Defaults to 1.
+        max_price (int,optional) : The maximum price to limit the hotel search for.
         property_types (str, optional): A comma-separated string of property type codes to filter the search results.
             Defaults to '21'.
             Examples:
@@ -61,8 +62,9 @@ def hotels_finder(location,check_in_date,check_out_date,adults= 2,children = 0,r
         'children': children,
         'rooms': rooms,
         'property_types' : property_types,
-        'amenties': amenties
-        # 'sort_by': sort_by,
+        'amenties': amenties,
+        'sort_by': 8,
+        'max_price' : max_price
         # 'hotel_class': params.hotel_class
     }
 

@@ -6,6 +6,7 @@ import pandas as pd
 import json
 from pydantic import BaseModel, HttpUrl
 from datetime import date
+from pathlib import Path
 
 class HotelBooking(BaseModel):
     name: str
@@ -20,10 +21,18 @@ class HotelBooking(BaseModel):
 load_dotenv()
 
 #load helper information
-with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-property-types.json', 'r') as file:
-    hotel_types = file.read()
-with open(r'C:\Users\adith\OneDrive\Documents\langchain\travel-agent\data\google-hotels-amenities.json', 'r') as file:
-    amenties = file.read()
+base_directory = Path(__file__).resolve().parent
+data_directory = base_directory / 'data'
+
+hotel_types_path = data_directory / 'google-hotels-property-types.json'
+amenities_path = data_directory / 'google-hotels-amenities.json'
+
+with open(hotel_types_path, 'r') as file:
+    hotel_types = json.load(file)
+
+with open(amenities_path, 'r') as file:
+    amenities = json.load(file)
+
 
 def hotel_agent_response(chat_history,verbose):
     hotel_search_agent = Agent(
@@ -42,12 +51,16 @@ def hotel_agent_response(chat_history,verbose):
         description=f'''
         You will fetch the top 5 hotels based on the information in the chat history given : 
         "{chat_history}"
+
+        Also based on the chat history, decide what percentage (%) of the budget should go for allocation considering flights and other activities.
+        Ideally it should not cross 30% unless the user has asked for something additional
+
         Also use the below provided information if necessary:
         "property_types"
         {hotel_types}
 
         "amenties"
-        {amenties}
+        {amenities}
         ''',
         expected_output='''JSON output which has the name of the hotel price of the hotel,ratings,room,link to the booking,type of hotel,check-in,check-out.
         # Do not include any extra characters in the final output
@@ -68,4 +81,7 @@ def hotel_agent_response(chat_history,verbose):
     return final_result
 
 
-hotel_agent_response('I want to book a room for goa on 21st may 2025 and 30th may 2025 and i prefer hostels and i want the hostel to include wifi and swimming pool',True)
+hotel_agent_response('''    
+    I want to book a room for goa on 21st may 2025 and 30th may 2025 and i prefer hostels and i want the hostel to include wifi and swimming pool.
+    My total trip budget is around 5000$ and im looking for a comfortable stay during this time.                     
+                     ''',True)
