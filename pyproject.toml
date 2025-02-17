@@ -1,0 +1,27 @@
+[project]
+name = "travel-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "crewai==0.102.0",
+    "google-search-results==2.4.2",
+    "ipykernel==6.29.5",
+    "ipyparallel==9.0.0",
+    "langchain-community==0.3.17",
+    "langchain-core==0.3.35",
+    "langchain-groq==0.2.4",
+    "langchain-openai==0.3.5",
+    "numpy==1.26.4",
+    "numpydoc==1.8.0",
+    "openai==1.63.0",
+    "pandas==2.2.3",
+    "pipreqs>=0.5.0",
+    "playwright==1.50.0",
+    "praw==7.8.1",
+    "pydantic==2.10.6",
+    "ruff>=0.9.6",
+    "serpapi==0.1.5",
+    "streamlit==1.41.1",
+]
