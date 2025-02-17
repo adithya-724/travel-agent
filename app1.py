@@ -12,7 +12,7 @@ import yaml
 from langchain_google_community import GoogleSearchAPIWrapper
 from langchain_core.tools import Tool
 from langchain.agents import initialize_agent, AgentType
-from langchain.callbacks import get_openai_callback
+from langchain_community.callbacks.manager import get_openai_callback
 
 # load env vars
 load_dotenv()
@@ -103,7 +103,7 @@ system_message = prompt_data["system_chat_template1"]
 # Initialize the agent with additional formatting instructions
 agent = initialize_agent(
     tools=[search_tool],
-    llm=llm1,
+    llm=llm,
     agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
     verbose=True,
     handle_parsing_errors=True,
@@ -188,27 +188,30 @@ else:
                         )
                         response = response1["output"]
 
+                        # Display current call metrics in sidebar
+                        st.sidebar.divider()
+                        st.sidebar.subheader("Current Call Metrics")
+                        st.sidebar.write(f"Total Tokens: {cb.total_tokens}")
+                        st.sidebar.write(f"Prompt Tokens: {cb.prompt_tokens}")
+                        st.sidebar.write(f"Completion Tokens: {cb.completion_tokens}")
+                        st.sidebar.write(f"Cost (USD): ${cb.total_cost:.4f}")
+
                         # Update cumulative metrics
                         st.session_state.total_tokens += cb.total_tokens
                         st.session_state.prompt_tokens += cb.prompt_tokens
                         st.session_state.completion_tokens += cb.completion_tokens
                         st.session_state.total_cost += cb.total_cost
 
-                        # Display cumulative metrics in sidebar
-                        st.sidebar.divider()
-                        st.sidebar.subheader("Cumulative Usage Metrics")
-                        st.sidebar.write(
-                            f"Total Tokens: {st.session_state.total_tokens}"
-                        )
-                        st.sidebar.write(
-                            f"Prompt Tokens: {st.session_state.prompt_tokens}"
-                        )
-                        st.sidebar.write(
-                            f"Completion Tokens: {st.session_state.completion_tokens}"
-                        )
-                        st.sidebar.write(
-                            f"Total Cost (USD): ${st.session_state.total_cost:.4f}"
-                        )
+                        # Display cumulative metrics in sidebar expander
+                        with st.sidebar.expander("View Cumulative Usage Metrics"):
+                            st.write(f"Total Tokens: {st.session_state.total_tokens}")
+                            st.write(f"Prompt Tokens: {st.session_state.prompt_tokens}")
+                            st.write(
+                                f"Completion Tokens: {st.session_state.completion_tokens}"
+                            )
+                            st.write(
+                                f"Total Cost (USD): ${st.session_state.total_cost:.4f}"
+                            )
 
                 # for deepseek
                 elif model == "deepseek":
