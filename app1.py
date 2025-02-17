@@ -9,6 +9,9 @@ import pandas as pd
 import time
 import datetime
 import yaml
+from langchain_google_community import GoogleSearchAPIWrapper
+from langchain_core.tools import Tool
+from langchain.agents import initialize_agent, AgentType
 
 # load env vars
 load_dotenv()
@@ -26,6 +29,9 @@ if "messages" not in st.session_state:
 if "message_history" not in st.session_state:
     st.session_state.message_history = ""
 
+if "formatted_chat_history" not in st.session_state:
+    st.session_state.formatted_chat_history = []
+
 if "conv_end_flag" not in st.session_state:
     st.session_state.conv_end_flag = 0
 
@@ -39,6 +45,7 @@ with st.sidebar:
     if hist_btn:
         st.session_state.messages = []
         st.session_state.message_history = ""
+        st.session_state.formatted_chat_history = []
         st.session_state.conv_end_flag = 0
 
     if st.session_state.conv_end_flag == 1:
@@ -60,9 +67,41 @@ llm1 = ChatOpenAI(
     model="gpt-4", temperature=0.7, max_tokens=None, timeout=None, max_retries=2
 )
 
+
+search = GoogleSearchAPIWrapper()
+
+# Create a Tool instance for the agent
+search_tool = Tool(
+    name="google_search",
+    description="Search Google for recent information.",
+    func=search.run,
+)
+
 # load prompts
 with open("prompts\chat_prompts.yaml", "r") as file:
     prompt_data = yaml.safe_load(file)
+
+# Create the system message that includes instructions about using search
+system_message = (
+    prompt_data["system_chat_template1"]
+    + """
+When you need real-time or recent information (like weather, events, or current conditions), 
+use the google_search tool to find accurate information before responding.
+
+If the user asks about flights or hotels, kindly inform them that detailed flight and hotel options will be provided once all their travel details are confirmed and finalized.
+"""
+)
+
+
+# Initialize the agent with additional formatting instructions
+agent = initialize_agent(
+    tools=[search_tool],
+    llm=llm,
+    agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+    verbose=False,
+    handle_parsing_errors=True,
+    agent_kwargs={"system_message": system_message},
+)
 
 
 # print(st.session_state.message_history)
@@ -94,16 +133,18 @@ if st.session_state.conv_end_flag == 1:
 else:
     if prompt := st.chat_input("Hello there! How may i help you today?"):
         # Add user message to chat history
+        # user questions
         st.session_state.messages.append({"role": "user", "content": prompt})
         st.session_state.message_history += "Human Response:" + prompt + "\n"
+
         # Display user message in chat message container
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # print(prompt)
         prompt_ending = ChatPromptTemplate.from_messages(
             [("system", prompt_data["system_chat_ending"])]
         )
+
         chain_ending = prompt_ending | llm
         if model == "gpt":
             response_ending = chain_ending.invoke(
@@ -129,30 +170,34 @@ else:
                 st.rerun()
         else:
             with st.chat_message("assistant"):
-                prompt = ChatPromptTemplate.from_messages(
-                    [("system", prompt_data["system_chat_template"])]
-                )
-
-                # for langchain compatible models use this
-                chain = prompt | llm1
-
                 if model == "gpt":
-                    response1 = chain.invoke(
+                    response1 = agent.invoke(
                         {
-                            "msg_history": st.session_state.message_history,
+                            "input": prompt,
+                            "chat_history": st.session_state.formatted_chat_history,
                             "current_year": current_year,
                         }
                     )
-                    response = response1.content
+                    response = response1["output"]
                 # for deepseek
                 elif model == "deepseek":
                     response = get_deepseek_response(
                         prompt_data["system_chat_template"].format(
-                            msg_history=st.session_state.message_history,
+                            msg_history=st.session_state.formatted_chat_history,
                             current_year=current_year,
                         ),
                         "",
                     )
                 st.markdown(response)
-            st.session_state.message_history += "Agent Response:" + response + "\n\n"
-            st.session_state.messages.append({"role": "assistant", "content": response})
+
+                # Update both chat history formats
+                st.session_state.formatted_chat_history.append(("human", prompt))
+
+                # responses
+                st.session_state.messages.append(
+                    {"role": "assistant", "content": response}
+                )
+                st.session_state.message_history += (
+                    "Agent Response:" + response + "\n\n"
+                )
+                st.session_state.formatted_chat_history.append(("assistant", response))
