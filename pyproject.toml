@@ -15,6 +15,7 @@ dependencies = [
     "langchain-google-community>=2.0.4",
     "langchain-groq==0.2.4",
     "langchain-openai==0.3.5",
+    "loguru>=0.7.3",
     "numpy==1.26.4",
     "numpydoc==1.8.0",
     "openai==1.63.0",

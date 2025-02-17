@@ -12,6 +12,7 @@ import yaml
 from langchain_google_community import GoogleSearchAPIWrapper
 from langchain_core.tools import Tool
 from langchain.agents import initialize_agent, AgentType
+from langchain.callbacks import get_openai_callback
 
 # load env vars
 load_dotenv()
@@ -35,6 +36,15 @@ if "formatted_chat_history" not in st.session_state:
 if "conv_end_flag" not in st.session_state:
     st.session_state.conv_end_flag = 0
 
+if "total_tokens" not in st.session_state:
+    st.session_state.total_tokens = 0
+if "prompt_tokens" not in st.session_state:
+    st.session_state.prompt_tokens = 0
+if "completion_tokens" not in st.session_state:
+    st.session_state.completion_tokens = 0
+if "total_cost" not in st.session_state:
+    st.session_state.total_cost = 0.0
+
 
 # sidebar
 with st.sidebar:
@@ -47,6 +57,10 @@ with st.sidebar:
         st.session_state.message_history = ""
         st.session_state.formatted_chat_history = []
         st.session_state.conv_end_flag = 0
+        st.session_state.total_tokens = 0
+        st.session_state.prompt_tokens = 0
+        st.session_state.completion_tokens = 0
+        st.session_state.total_cost = 0.0
 
     if st.session_state.conv_end_flag == 1:
         chat_btn = st.button("resume chat")
@@ -77,28 +91,21 @@ search_tool = Tool(
     func=search.run,
 )
 
+
 # load prompts
 with open("prompts\chat_prompts.yaml", "r") as file:
     prompt_data = yaml.safe_load(file)
 
 # Create the system message that includes instructions about using search
-system_message = (
-    prompt_data["system_chat_template1"]
-    + """
-When you need real-time or recent information (like weather, events, or current conditions), 
-use the google_search tool to find accurate information before responding.
-
-If the user asks about flights or hotels, kindly inform them that detailed flight and hotel options will be provided once all their travel details are confirmed and finalized.
-"""
-)
+system_message = prompt_data["system_chat_template1"]
 
 
 # Initialize the agent with additional formatting instructions
 agent = initialize_agent(
     tools=[search_tool],
-    llm=llm,
+    llm=llm1,
     agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-    verbose=False,
+    verbose=True,
     handle_parsing_errors=True,
     agent_kwargs={"system_message": system_message},
 )
@@ -171,14 +178,38 @@ else:
         else:
             with st.chat_message("assistant"):
                 if model == "gpt":
-                    response1 = agent.invoke(
-                        {
-                            "input": prompt,
-                            "chat_history": st.session_state.formatted_chat_history,
-                            "current_year": current_year,
-                        }
-                    )
-                    response = response1["output"]
+                    with get_openai_callback() as cb:
+                        response1 = agent.invoke(
+                            {
+                                "input": prompt,
+                                "chat_history": st.session_state.formatted_chat_history,
+                                "current_year": current_year,
+                            }
+                        )
+                        response = response1["output"]
+
+                        # Update cumulative metrics
+                        st.session_state.total_tokens += cb.total_tokens
+                        st.session_state.prompt_tokens += cb.prompt_tokens
+                        st.session_state.completion_tokens += cb.completion_tokens
+                        st.session_state.total_cost += cb.total_cost
+
+                        # Display cumulative metrics in sidebar
+                        st.sidebar.divider()
+                        st.sidebar.subheader("Cumulative Usage Metrics")
+                        st.sidebar.write(
+                            f"Total Tokens: {st.session_state.total_tokens}"
+                        )
+                        st.sidebar.write(
+                            f"Prompt Tokens: {st.session_state.prompt_tokens}"
+                        )
+                        st.sidebar.write(
+                            f"Completion Tokens: {st.session_state.completion_tokens}"
+                        )
+                        st.sidebar.write(
+                            f"Total Cost (USD): ${st.session_state.total_cost:.4f}"
+                        )
+
                 # for deepseek
                 elif model == "deepseek":
                     response = get_deepseek_response(

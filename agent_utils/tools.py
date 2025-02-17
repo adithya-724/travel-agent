@@ -23,6 +23,7 @@ def hotels_finder(
     property_types=21,
     amenties=None,
     max_price=None,
+    currency="INR",
 ):
     """
     Searches for hotels in a specified location and date range using SerpApi's Google Hotels engine.
@@ -55,6 +56,12 @@ def hotels_finder(
                     '35,9,19'
 
             Note: Replace '35', '9', '19' with the appropriate amenity codes as per SerpApi's documentation.
+        currency (str, optional): The currency code to display hotel prices in.
+            Defaults to 'INR'.
+            Examples:
+                - 'USD' for US Dollars
+                - 'EUR' for Euros
+                - 'GBP' for British Pounds
 
     Returns:
         list: A list of dictionaries containing details of the top 10 hotel properties found.
@@ -68,7 +75,7 @@ def hotels_finder(
         "q": location,
         "check_in_date": check_in_date,
         "check_out_date": check_out_date,
-        "currency": "INR",
+        "currency": currency,
         "adults": adults,
         "children": children,
         "rooms": rooms,
@@ -137,7 +144,7 @@ def fetch_reddit_content(location):
     # keywords_str = ' '.join(location)
     print(location)
     location_ls = location.split(" ")
-    num_posts = 50
+    num_posts = 20
     fetched_posts = 0
     comment_exceed = 0
     invalid_urls_posts = 0
