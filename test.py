@@ -1,4 +1,4 @@
-from agent_utils.agents import hotel_agent
+from agent_utils.agents import hotel_agent, itinerary_agent
 import pandas as pd
 
 
@@ -17,5 +17,5 @@ User: I would prefer hotels and hostels
 """
 
 
-response = hotel_agent(chat_history, True)
+response = itinerary_agent(chat_history, True)
 hotels_df = pd.DataFrame(response)

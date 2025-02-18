@@ -5,9 +5,20 @@ import json
 from pydantic import BaseModel
 from datetime import date
 import yaml
+from langchain_google_community import GoogleSearchAPIWrapper
+from langchain.tools import Tool
 
 
 load_dotenv()
+
+search = GoogleSearchAPIWrapper()
+
+# Create a Tool instance for the agent
+search_tool = Tool(
+    name="google_search",
+    description="Search Google for recent information.",
+    func=search.run,
+)
 
 # Load agent prompts from YAML
 with open("prompts/agent_prompts.yaml", "r") as file:
@@ -42,8 +53,8 @@ def itinerary_agent(chat_history, verbose):
         role=itinerary_config["itinerary_agent"]["role"],
         goal=itinerary_config["itinerary_agent"]["goal"],
         backstory=itinerary_config["itinerary_agent"]["backstory"],
-        tools=[fetch_reddit_content],
-        max_iter=itinerary_config["itinerary_agent"]["max_iter"],
+        tools=[fetch_reddit_content, search_tool],
+        max_iter=3,
         llm=itinerary_config["itinerary_agent"]["llm"],
     )
 
@@ -134,6 +145,38 @@ def hotel_agent(chat_history, verbose):
     )
 
     result = crew.kickoff()
-    final_result = json.loads(result.raw)
 
-    return final_result
+    # Enhanced error handling for JSON parsing
+    try:
+        # First attempt to parse as is
+        final_result = json.loads(result.raw)
+        return final_result
+    except json.JSONDecodeError:
+        try:
+            # Clean up the response and ensure it's a valid JSON array
+            cleaned_response = result.raw.strip()
+
+            # If response doesn't start with [, add it
+            if not cleaned_response.startswith("["):
+                cleaned_response = "[" + cleaned_response
+
+            # If response doesn't end with ], add it
+            if not cleaned_response.endswith("]"):
+                cleaned_response = cleaned_response + "]"
+
+            # Remove any trailing commas before closing brackets
+            cleaned_response = cleaned_response.replace("},\n}]", "}\n}]")
+            cleaned_response = cleaned_response.replace("},}]", "}}]")
+
+            # Try parsing the cleaned response
+            final_result = json.loads(cleaned_response)
+            return final_result
+
+        except json.JSONDecodeError as e:
+            print(f"Error parsing JSON: {e}")
+            print(f"Raw response: {result.raw}")
+            # Return an empty list as fallback
+            return []
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            return []

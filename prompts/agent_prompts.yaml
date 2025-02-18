@@ -20,38 +20,6 @@ hotel_agents:
       - hotels_finder
     llm: gpt-4o
 
-tasks:
-  budget_task:
-    description: |
-      Analyze the chat history to:
-      1. Extract the total trip budget and currency
-      2. Extract the number of days for the trip
-      3. Calculate 30% of the total budget for hotels
-      4. Divide the hotel budget by number of days to get per-day hotel budget
-
-      Chat history:
-      {chat_history}
-    expected_output: An integer representing the maximum per day hotel budget in the original currency
-
-  hotel_task:
-    description: |
-      Using the per-day budget calculated, fetch the top 5 hotels based on the information in the chat history:
-      "{chat_history}"
-
-      Make sure to return the prices in the currency mentioned by the user.
-
-      Also use the below provided information if necessary:
-      "property_types"
-      {hotel_types}
-
-      "amenities"
-      {amenities}
-    expected_output: |
-      JSON output which has the name of the hotel, total price of the hotel, price per night of the hotel, 
-      ratings, room, link to the booking, type of hotel, check-in, check-out.
-      # Do not include any extra characters in the final output
-
-
 # itinerary agent
 itinerary_agents:
   summarizing_agent:
@@ -75,26 +43,92 @@ itinerary_agents:
     max_iter: 2
     llm: gpt-4o
 
-# Tasks for itinerary planning
+# Tasks
 tasks:
   summarising_task:
     description: |
-      Analyze the following conversation to identify and extract all country or city names mentioned:
+      Your task is to analyze the conversation and extract:
+      1. The main country being discussed (this is required)
+      2. 2-3 specific cities mentioned within that country
+
+      The output should be in this format:
+      - Country name first
+      - Followed by 2-3 most relevant cities, separated by commas
+      - Maximum of 4 total locations (1 country + up to 3 cities)
+
+      For example: "Thailand, Bangkok, Phuket, Chiang Mai" or "Vietnam, Hanoi, Ho Chi Minh City"
+      Chat history:
       {chat_history}
-      Focus on listing each unique location found in the conversation.
-      Provide these locations as a single string, separated by commas.
-      Extract a maximum of three locations where the first location should always be the country
+  
     expected_output: A single string containing the extracted locations, separated by commas.
 
   itinerary_task:
     description: |
-      Using the extracted information and the detailed chat history, perform the following:
-      1. Research the specified destination to identify key attractions and activities related to the user's interests.
-      2. Gather relevant Reddit comments to incorporate actual user experiences and additional insights.
-      3. Determine the best times for each activity, considering factors like weather, peak hours, and seasonal events.
-      4. Organize activities into a daily schedule, ensuring a balanced and enjoyable itinerary.
-      5. Provide recommendations for dining, relaxation, and other leisure activities that align with the user's preferences.
-      Ensure that the itinerary is detailed, practical, and tailored to the user's interests.
+      Using the locations extracted from the previous task, follow these steps to create a comprehensive itinerary:
+
+      1. First, search Reddit for authentic travel experiences and local insights:
+         - Look for recent travel stories and recommendations
+         - Find local tips and hidden gems
+         - Gather information about transportation and logistics
+         - Note any safety or cultural considerations
+
+      2. If Reddit results are insufficient (less than 3 relevant experiences or outdated information):
+         - Use Google search to find:
+           * Recent travel blogs and professional guides
+           * Current tourist experiences and reviews
+           * Updated information about attractions and activities
+           * Local events happening during the planned dates
+           * Seasonal considerations and weather patterns
+           * Transportation options and travel times
+           * Current prices and booking requirements
+           * Local festivals or special events
+           * Restaurant recommendations and local cuisine
+           * Safety updates and travel advisories
+
+      3. Combine all gathered information to:
+         - Identify must-visit attractions and activities
+         - Map out logical daily routes to minimize travel time
+         - Include alternative indoor activities for weather contingencies
+         - Balance tourist attractions with authentic local experiences
+         - Account for opening hours and peak visiting times
+         - Consider local meal times and dining customs
+         - Include rest periods and flexible time slots
+         - Add local transportation details between locations
       Chat history:
       {chat_history}
     expected_output: A Python string containing a detailed daily itinerary with scheduled activities, times, and additional recommendations. It should not be a dictionary.
+
+  budget_task:
+    description: |
+      Analyze the chat history to:
+      1. Extract the total trip budget and currency
+      2. Extract the number of days for the trip
+      3. Calculate 30% of the total budget for hotels
+      4. Divide the hotel budget by number of days to get per-day hotel budget
+
+      Chat history:
+      {chat_history}
+    expected_output: An integer representing the maximum per day hotel budget in the original currency
+
+  hotel_task:
+    description: |
+      Using the per-day budget calculated, fetch the top 5 hotels based on the information in the chat history:
+      "{chat_history}"
+
+      Make sure to:
+      1. Return the prices in the currency mentioned by the user
+      2. Format the response as a JSON array of hotel objects
+      3. Each hotel object should include all required fields
+      4. The response must be a valid JSON array starting with [ and ending with ]
+
+      Consider these additional details:
+        1. Available hotel types: 
+        {hotel_types}
+        2. Available amenities: 
+        {amenities}
+        3. Filter hotels based on user preferences mentioned in chat
+        4. Ensure total price stays within budget
+        5. Sort results by best value (considering price, ratings, and amenities)
+
+ 
+    expected_output: A JSON array containing hotel booking information

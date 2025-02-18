@@ -86,10 +86,24 @@ def hotels_finder(
         # 'hotel_class': params.hotel_class
     }
 
-    search = serpapi.search(params)
-    results = search.data
-    top_50 = results["properties"][:50]
-    return top_50
+    try:
+        search = serpapi.search(params)
+        results = search.data
+        if "properties" not in results:
+            print("Warning: No properties found in search results")
+            return []
+
+        properties = results["properties"]
+        if not properties:
+            print("Warning: Properties list is empty")
+            return []
+
+        top_50 = properties[:50]
+        return top_50
+
+    except Exception as e:
+        print(f"Error occurred during hotel search: {str(e)}")
+        return []
 
 
 @tool("RedditCommentFinder")
@@ -144,7 +158,7 @@ def fetch_reddit_content(location):
     # keywords_str = ' '.join(location)
     print(location)
     location_ls = location.split(" ")
-    num_posts = 20
+    num_posts = 10
     fetched_posts = 0
     comment_exceed = 0
     invalid_urls_posts = 0
